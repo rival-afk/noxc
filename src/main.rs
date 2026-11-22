@@ -13,28 +13,6 @@ struct BC {
     chain: Vec<Block>,
 }
 
-impl BC {
-    fn init() -> Self {
-        let index: u64 = 0;
-        let data: String = String::from("init");
-        let prev_hash: String = String::from("0");
-        let timestamp = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_millis() as u64;
-        let hash: String = calc_hash(index, &data, &prev_hash, timestamp);
-        let mut chain: Vec<Block> = vec![];
-        let init_block: Block = Block {
-            index,
-            data,
-            hash,
-            prev_hash,
-            timestamp
-        };
-        chain.push(init_block);
-        Self {
-            chain
-        }
-    }
-}
-
 impl Block {
     fn new(index: u64, data: String, prev_hash: String) -> Self {
         let timestamp = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_millis() as u64;
@@ -49,21 +27,52 @@ impl Block {
     }  
 }
 
+impl BC {
+    fn init() -> Self {
+        let init_block = Block::new(0, String::from("init"), String::from("0"));
+        Self {
+            chain: vec![init_block],
+        }
+    }
+
+    fn add(&mut self, data: String) {
+        let prev_block = self.chain.last().unwrap();
+        let index = prev_block.index + 1;
+        let prev_hash = prev_block.hash.clone();
+        let block = Block::new(index, data, prev_hash);
+        self.chain.push(block);
+    }
+
+    fn is_valid(&self) -> (bool, u8) {
+        let mut valid: bool = true;
+        let mut status_code: u8 = 0;
+        for i in 1..self.chain.len() {
+            let prev = &self.chain[i - 1];
+            let current = &self.chain[i];
+            if calc_hash(current.index, &current.data, &current.prev_hash, current.timestamp) != current.hash {
+                valid = false;
+                status_code += 1;
+            }
+            if prev.hash != current.prev_hash {
+                valid = false;
+                status_code += 2;
+            }
+            if current.timestamp <= prev.timestamp {
+                valid = false;
+                status_code += 3;
+            }
+        }
+        (valid, status_code)
+    }
+}
+
 fn main() {
-    let mut idk: Vec<Block> = vec![];
-    idk.push(Block::new(
-        1,
-        String::from("test1"),
-        String::from("0")
-    ));
-    idk.push(Block::new(
-        2,
-        String::from("test2"),
-        String::from(idk[0].hash.clone()),
-        
-    ));
-    for block in &idk {
-        println!("index: {}\ndata: {}", block.index, block.data);
+    let mut bc = BC::init();
+    bc.add(String::from("first block"));
+    bc.add(String::from("second block"));
+
+    for block in &bc.chain {
+        println!("prev_hash: {}\n{} {}\nhash: {}\n", block.prev_hash, block.index, block.data, block.hash);
     }
 }
 
