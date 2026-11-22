@@ -43,26 +43,21 @@ impl BC {
         self.chain.push(block);
     }
 
-    fn is_valid(&self) -> (bool, u8) {
-        let mut valid: bool = true;
-        let mut status_code: u8 = 0;
+    fn is_valid(&self) -> (bool, u64) {
         for i in 1..self.chain.len() {
             let prev = &self.chain[i - 1];
             let current = &self.chain[i];
             if calc_hash(current.index, &current.data, &current.prev_hash, current.timestamp) != current.hash {
-                valid = false;
-                status_code += 1;
+                return (false, i as u64)
             }
             if prev.hash != current.prev_hash {
-                valid = false;
-                status_code += 2;
+                return (false, i as u64)
             }
-            if current.timestamp <= prev.timestamp {
-                valid = false;
-                status_code += 3;
+            if current.timestamp < prev.timestamp {
+                return (false, i as u64)
             }
         }
-        (valid, status_code)
+        (true, 0)
     }
 }
 
@@ -70,10 +65,12 @@ fn main() {
     let mut bc = BC::init();
     bc.add(String::from("first block"));
     bc.add(String::from("second block"));
+    let (is_valid, invalid_index) = bc.is_valid();
 
     for block in &bc.chain {
         println!("prev_hash: {}\n{} {}\nhash: {}\n", block.prev_hash, block.index, block.data, block.hash);
     }
+    println!("valid: {}, last invalid block index (0 if chain is valid): {}", is_valid, invalid_index)
 }
 
 fn calc_hash(i: u64, data: &str, prev: &str, ts: u64) -> String {
