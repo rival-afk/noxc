@@ -44,6 +44,10 @@ impl BC {
     }
 
     fn is_valid(&self) -> (bool, u64) {
+        let genesis = &self.chain[0];
+        if calc_hash(genesis.index, &genesis.data, &genesis.prev_hash, genesis.timestamp) != genesis.hash {
+            return (false, 0)
+        }
         for i in 1..self.chain.len() {
             let prev = &self.chain[i - 1];
             let current = &self.chain[i];
