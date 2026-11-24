@@ -26,7 +26,7 @@ struct BC {
 impl Block {
     fn new(index: u64, transactions: Vec<Transaction>, prev_hash: String, validator: String) -> Self {
         let timestamp = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_millis() as u64;
-        let hash = calc_hash(index, &transactions, &validator, &prev_hash, timestamp);
+        let hash = calc_hash(index, &transactions, &prev_hash, &validator, timestamp);
         Self {
             index,
             transactions,
@@ -55,7 +55,7 @@ impl BC {
         self.chain.push(block);
     }
 
-    fn is_valid(&self) -> (bool, u64) {
+    fn is_valid(&self) -> (bool, i64) {
         let genesis = &self.chain[0];
         if calc_hash(genesis.index, &genesis.transactions, &genesis.prev_hash, &genesis.validator, genesis.timestamp) != genesis.hash {
             return (false, 0)
@@ -67,19 +67,19 @@ impl BC {
             let prev = &self.chain[i - 1];
             let current = &self.chain[i];
             if calc_hash(current.index, &current.transactions, &current.prev_hash, &current.validator,  current.timestamp) != current.hash {
-                return (false, i as u64)
+                return (false, i as i64)
             }
             if prev.hash != current.prev_hash {
-                return (false, i as u64)
+                return (false, i as i64)
             }
             if current.timestamp < prev.timestamp {
-                return (false, i as u64)
+                return (false, i as i64)
             }
             if !self.authorities.contains(&current.validator) {
-                return (false, i as u64)
+                return (false, i as i64)
             }
         }
-        (true, 0)
+        (true, -1)
     }
     
     fn get_balance(&self, address: &str, currency: &str) -> u128 {
@@ -98,6 +98,7 @@ impl BC {
                 }
             }
         }
+        return balance
     }
 }
 
@@ -108,13 +109,13 @@ fn main() {
     let (is_valid, invalid_index) = bc.is_valid();
 
     for block in &bc.chain {
-        println!("[BLC] {}: prev_hash: {}\n", block.index, block.prev_hash);
+        println!("[BLC] {}: prev_hash: {}, validator: {}\n", block.index, block.prev_hash, block.validator);
         for (i, trn) in block.transactions.iter().enumerate() {
             println!("[TRN] {}: sender: {}, receiver: {}, amount: {}, currency: {}\n", i, trn.sender, trn.receiver, trn.amount, trn.currency)
         }
         println!("[BLC] hash: {}\n", block.hash);
     }
-    println!("[BC] valid: {}, last invalid block index (0 if chain is valid): {}", is_valid, invalid_index)
+    println!("[BC] valid: {}, last invalid block index (-1 if chain is valid): {}", is_valid, invalid_index)
 }
 
 fn calc_hash(i: u64, tns: &Vec<Transaction>, prev: &str, val: &str, ts: u64) -> String {
