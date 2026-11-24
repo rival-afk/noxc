@@ -81,6 +81,24 @@ impl BC {
         }
         (true, 0)
     }
+    
+    fn get_balance(&self, address: &str, currency: &str) -> u128 {
+        let mut balance: u128 = 0;
+        for block in &self.chain {
+            for trn in &block.transactions {
+                if trn.receiver == address {
+                    balance += trn.amount;
+                }
+                if trn.sender == address {
+                    if balance >= trn.amount {
+                        balance -= trn.amount;
+                    } else {
+                        return 1
+                    }
+                }
+            }
+        }
+    }
 }
 
 fn main() {
