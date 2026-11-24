@@ -26,7 +26,7 @@ struct BC {
 impl Block {
     fn new(index: u64, transactions: Vec<Transaction>, prev_hash: String, validator: String) -> Self {
         let timestamp = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_millis() as u64;
-        let hash = calc_hash(index, &transactions, &validator, &prev_hash, timestamp);
+        let hash = calc_hash(index, &transactions, &prev_hash, &validator, timestamp);
         Self {
             index,
             transactions,
@@ -57,7 +57,7 @@ impl BC {
 
     fn is_valid(&self) -> (bool, i64) {
         let genesis = &self.chain[0];
-        if calc_hash(genesis.index, &genesis.transactions, &genesis.validator, &genesis.prev_hash, genesis.timestamp) != genesis.hash {
+        if calc_hash(genesis.index, &genesis.transactions, &genesis.prev_hash, &genesis.validator, genesis.timestamp) != genesis.hash {
             return (false, 0)
         }
         if !self.authorities.contains(&genesis.validator) {
@@ -66,7 +66,7 @@ impl BC {
         for i in 1..self.chain.len() {
             let prev = &self.chain[i - 1];
             let current = &self.chain[i];
-            if calc_hash(current.index, &current.transactions, &current.validator, &current.prev_hash, current.timestamp) != current.hash {
+            if calc_hash(current.index, &current.transactions, &current.prev_hash, &current.validator,  current.timestamp) != current.hash {
                 return (false, i as i64)
             }
             if prev.hash != current.prev_hash {
@@ -81,8 +81,25 @@ impl BC {
         }
         (true, -1)
     }
-
-    fn get_balance(&self, address: &str, currency: &str) -> u128
+    
+    fn get_balance(&self, address: &str, currency: &str) -> u128 {
+        let mut balance: u128 = 0;
+        for block in &self.chain {
+            for trn in &block.transactions {
+                if trn.receiver == address {
+                    balance += trn.amount;
+                }
+                if trn.sender == address {
+                    if balance >= trn.amount {
+                        balance -= trn.amount;
+                    } else {
+                        return 1
+                    }
+                }
+            }
+        }
+        return balance
+    }
 }
 
 fn main() {
@@ -99,7 +116,7 @@ fn main() {
         }
         println!("[BLC] hash: {}\n", block.hash);
     }
-    println!("[BC] valid: {}, last invalid block index (-1 = valid): {}", is_valid, invalid_index)
+    println!("[BC] valid: {}, last invalid block index (-1 if chain is valid): {}", is_valid, invalid_index)
 }
 
 fn calc_hash(i: u64, tns: &Vec<Transaction>, prev: &str, val: &str, ts: u64) -> String {
