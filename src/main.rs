@@ -1,6 +1,7 @@
 use sha2::{Sha256, Digest};
 use std::time::{SystemTime, UNIX_EPOCH};
 use std::fmt::Write;
+use std::collections::{HashSet};
 
 struct Block {
     index: u64,
@@ -21,7 +22,7 @@ struct Transaction {
 struct BC {
     chain: Vec<Block>,
     authorities: Vec<String>,
-    currencies: Vec<String>
+    currencies: HashSet<String>
 }
 
 impl Block {
@@ -41,11 +42,11 @@ impl Block {
 
 impl BC {
     fn init() -> Self {
-        let init_block = Block::new(0, vec![Transaction { sender: String::from("init"), receiver: String::from("init"), amount: 0, currency: String::from("Undefined") }], String::from("0"), String::from("init"));
+        let init_block = Block::new(0, vec![Transaction { sender: String::from("system"), receiver: String::from("test1"), amount: 1000, currency: String::from("NXC") }], String::from("0"), String::from("init"));
         Self {
             chain: vec![init_block],
             authorities: vec![String::from("server"), String::from("init")],
-            currencies: vec![String::from("NXC")]
+            currencies: HashSet::from([String::from("NXC")])
         }
     }
 
@@ -54,7 +55,7 @@ impl BC {
         let index = prev_block.index + 1;
         let prev_hash = prev_block.hash.clone();
         for trn in &tns {
-            let balance = self.get_balance(trn.sender.clone(), trn.currency.clone()).unwrap_or(0);
+            let balance = self.get_balance(&trn.sender, &trn.currency).unwrap_or(0);
             if balance < trn.amount {
                 println!("[ERR] {} has insufficient funds ({} {}) to complete the transfer: {} {}", trn.sender, balance, trn.currency, trn.amount, trn.currency);
                 return
@@ -91,8 +92,8 @@ impl BC {
         (true, -1)
     }
     
-    fn get_balance(&self, address: String, currency: String) -> Option<u128> {
-        if !&self.currencies.contains(&currency) {
+    fn get_balance(&self, address: &str, currency: &str) -> Option<u128> {
+        if !self.currencies.contains(currency) {
             return None
         }
         let mut balance: u128 = 0;
