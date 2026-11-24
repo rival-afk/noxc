@@ -20,7 +20,8 @@ struct Transaction {
 
 struct BC {
     chain: Vec<Block>,
-    authorities: Vec<String>
+    authorities: Vec<String>,
+    currencies: Vec<String>
 }
 
 impl Block {
@@ -43,7 +44,8 @@ impl BC {
         let init_block = Block::new(0, vec![Transaction { sender: String::from("init"), receiver: String::from("init"), amount: 0, currency: String::from("Undefined") }], String::from("0"), String::from("init"));
         Self {
             chain: vec![init_block],
-            authorities: vec![String::from("server"), String::from("init")]
+            authorities: vec![String::from("server"), String::from("init")],
+            currencies: vec![String::from("NXC")]
         }
     }
 
@@ -51,6 +53,13 @@ impl BC {
         let prev_block = self.chain.last().unwrap();
         let index = prev_block.index + 1;
         let prev_hash = prev_block.hash.clone();
+        for trn in &tns {
+            let balance = self.get_balance(trn.sender.clone(), trn.currency.clone()).unwrap_or(0);
+            if balance < trn.amount {
+                println!("[ERR] {} has insufficient funds ({} {}) to complete the transfer: {} {}", trn.sender, balance, trn.currency, trn.amount, trn.currency);
+                return
+            }
+        }
         let block = Block::new(index, tns, prev_hash, String::from(validator));
         self.chain.push(block);
     }
@@ -82,23 +91,28 @@ impl BC {
         (true, -1)
     }
     
-    fn get_balance(&self, address: &str, currency: &str) -> u128 {
+    fn get_balance(&self, address: String, currency: String) -> Option<u128> {
+        if !&self.currencies.contains(&currency) {
+            return None
+        }
         let mut balance: u128 = 0;
         for block in &self.chain {
             for trn in &block.transactions {
-                if trn.receiver == address {
-                    balance += trn.amount;
-                }
-                if trn.sender == address {
-                    if balance >= trn.amount {
-                        balance -= trn.amount;
-                    } else {
-                        return 1
+                if trn.currency == currency {
+                    if trn.receiver == address {
+                        balance += trn.amount;
+                    }
+                    if trn.sender == address && trn.sender != String::from("system") {
+                        if balance >= trn.amount {
+                            balance -= trn.amount;
+                        } else {
+                            return None
+                        }
                     }
                 }
             }
         }
-        return balance
+        Some(balance)
     }
 }
 
