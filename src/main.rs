@@ -12,7 +12,9 @@ fn main() {
     bc.add(vec![Transaction { sender: String::from("test1"), receiver: String::from("test2"), amount: 50, currency: String::from("NXC")}], "server");
     bc.add(vec![Transaction { sender: String::from("test2"), receiver: String::from("test1"), amount: 50, currency: String::from("NXC")}], "server");
     let (is_valid, invalid_index) = bc.is_valid();
-    let empty = bc.is_empty()
+    let empty = bc.is_empty();
+    let same = utils::test_calc_hash_same_input();
+    let diff = utils::test_calc_hash_diff_input();
     
     println!("[BC] authorities: {}", bc.authorities.join(", "));
     for block in &bc.chain {
@@ -22,6 +24,6 @@ fn main() {
         }
         println!("[BLC] hash: {}\n", block.hash);
     }
-    println!("[BC] valid: {}, last invalid block index (-1 if chain is valid): {}", is_valid, invalid_index)
-    println!("[BC] empty: {}", empty)
+    println!("[BC] valid: {}, last invalid block index (-1 if chain is valid): {}", is_valid, invalid_index);
+    println!("[BC] empty: {} same_hashes_are_the_same: {} different_hashes_are_different: {}", empty, same, diff)
 }
