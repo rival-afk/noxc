@@ -12,6 +12,7 @@ fn main() {
     bc.add(vec![Transaction { sender: String::from("test1"), receiver: String::from("test2"), amount: 50, currency: String::from("NXC")}], "server");
     bc.add(vec![Transaction { sender: String::from("test2"), receiver: String::from("test1"), amount: 50, currency: String::from("NXC")}], "server");
     let (is_valid, invalid_index) = bc.is_valid();
+    let empty = bc.is_empty()
     
     println!("[BC] authorities: {}", bc.authorities.join(", "));
     for block in &bc.chain {
@@ -22,4 +23,5 @@ fn main() {
         println!("[BLC] hash: {}\n", block.hash);
     }
     println!("[BC] valid: {}, last invalid block index (-1 if chain is valid): {}", is_valid, invalid_index)
+    println!("[BC] empty: {}", empty)
 }

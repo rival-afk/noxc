@@ -84,4 +84,6 @@ impl BC {
         }
         Some(balance)
     }
+    
+    fn is_empty(&self) -> bool { self.chain.is_empty() }
 }
