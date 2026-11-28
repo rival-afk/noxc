@@ -3,7 +3,7 @@ use std::fmt::Write;
 use sha2::{Sha256, Digest};
 use std::time::{SystemTime, UNIX_EPOCH};
 
-pub fn calc_hash(i: u64, tns: &Vec<Transaction>, prev: &str, val: &str, ts: u64) -> String {
+pub fn calc_hash(i: u64, tns: &[Transaction], prev: &str, val: &str, ts: u64) -> String {
     let mut tns_str = String::new();
     for trn in tns {
         write!(
